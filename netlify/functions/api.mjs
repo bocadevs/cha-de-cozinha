@@ -34,7 +34,7 @@ const defaultGifts = [
   { id: 31, name: "Contribuição via Pix", limit: 2, chosenBy: [] }
 ];
 
-export const handler = async (event, context) => {
+export default async (request, context) => {
   const store = getStore('gifts-store');
 
   const headers = {
@@ -44,33 +44,28 @@ export const handler = async (event, context) => {
     'Content-Type': 'application/json'
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (request.method === 'OPTIONS') {
+    return new Response('', { status: 200, headers });
   }
 
   try {
-    if (event.httpMethod === 'GET') {
+    if (request.method === 'GET') {
       let gifts = await store.get('gifts_list', { type: 'json' });
       if (!gifts) {
         await store.setJSON('gifts_list', defaultGifts);
         gifts = defaultGifts;
       }
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(gifts)
-      };
+      return new Response(JSON.stringify(gifts), { status: 200, headers });
     }
 
-    if (event.httpMethod === 'POST') {
-      const { id, guestName } = JSON.parse(event.body);
+    if (request.method === 'POST') {
+      const { id, guestName } = await request.json();
 
       if (!id || !guestName || guestName.trim() === '') {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'ID do presente e nome do convidado são obrigatórios.' })
-        };
+        return new Response(JSON.stringify({ error: 'ID do presente e nome do convidado são obrigatórios.' }), {
+          status: 400,
+          headers
+        });
       }
 
       let gifts = await store.get('gifts_list', { type: 'json' });
@@ -80,11 +75,10 @@ export const handler = async (event, context) => {
 
       const giftIndex = gifts.findIndex(g => g.id === parseInt(id));
       if (giftIndex === -1) {
-        return {
-          statusCode: 404,
-          headers,
-          body: JSON.stringify({ error: 'Presente não encontrado.' })
-        };
+        return new Response(JSON.stringify({ error: 'Presente não encontrado.' }), {
+          status: 404,
+          headers
+        });
       }
 
       const gift = gifts[giftIndex];
@@ -96,21 +90,19 @@ export const handler = async (event, context) => {
       const limit = gift.limit || 1;
 
       if (chosenCount >= limit) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ 
-            error: `Este presente já foi escolhido o limite máximo de ${limit} vez(es).` 
-          })
-        };
+        return new Response(JSON.stringify({ 
+          error: `Este presente já foi escolhido o limite máximo de ${limit} vez(es).` 
+        }), {
+          status: 400,
+          headers
+        });
       }
 
       if (gift.chosenBy.includes(guestName.trim())) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Você já reservou este presente com este nome.' })
-        };
+        return new Response(JSON.stringify({ error: 'Você já reservou este presente com este nome.' }), {
+          status: 400,
+          headers
+        });
       }
 
       gift.chosenBy.push(guestName.trim());
@@ -118,25 +110,16 @@ export const handler = async (event, context) => {
 
       await store.setJSON('gifts_list', gifts);
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ success: true, gift })
-      };
+      return new Response(JSON.stringify({ success: true, gift }), { status: 200, headers });
     }
 
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Método não permitido.' })
-    };
+    return new Response(JSON.stringify({ error: 'Método não permitido.' }), { status: 405, headers });
 
   } catch (error) {
     console.error('Erro na função serverless:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Erro interno no banco de dados do Netlify.' })
-    };
+    return new Response(JSON.stringify({ error: 'Erro interno no banco de dados do Netlify.' }), {
+      status: 500,
+      headers
+    });
   }
 };
