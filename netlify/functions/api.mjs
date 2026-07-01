@@ -34,6 +34,9 @@ const defaultGifts = [
   { id: 31, name: "Contribuição via Pix", limit: 2, chosenBy: [] }
 ];
 
+// Senha padrão para ações de administração
+const ADMIN_PASSWORD = '1234';
+
 export default async (request, context) => {
   const store = getStore('gifts-store');
 
@@ -59,8 +62,36 @@ export default async (request, context) => {
     }
 
     if (request.method === 'POST') {
-      const { id, guestName } = await request.json();
+      const body = await request.json();
+      const { action, id, guestName, password } = body;
 
+      // --- AÇÃO 1: REMOVER CONVIDADO (ADMINISTRADOR) ---
+      if (action === 'release') {
+        if (password !== ADMIN_PASSWORD) {
+          return new Response(JSON.stringify({ error: 'Senha de administrador inválida.' }), {
+            status: 401,
+            headers
+          });
+        }
+
+        let gifts = await store.get('gifts_list', { type: 'json' });
+        if (!gifts) return new Response(JSON.stringify({ error: 'Banco vazio.' }), { status: 404, headers });
+
+        const giftIndex = gifts.findIndex(g => g.id === parseInt(id));
+        if (giftIndex === -1) {
+          return new Response(JSON.stringify({ error: 'Presente não encontrado.' }), { status: 404, headers });
+        }
+
+        const gift = gifts[giftIndex];
+        if (Array.isArray(gift.chosenBy)) {
+          gift.chosenBy = gift.chosenBy.filter(name => name !== guestName);
+        }
+
+        await store.setJSON('gifts_list', gifts);
+        return new Response(JSON.stringify({ success: true, gifts }), { status: 200, headers });
+      }
+
+      // --- AÇÃO 2: ESCOLHER PRESENTE (CONVIDADO) ---
       if (!id || !guestName || guestName.trim() === '') {
         return new Response(JSON.stringify({ error: 'ID do presente e nome do convidado são obrigatórios.' }), {
           status: 400,

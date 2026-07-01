@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeFilter = 'all';
     let searchQuery = '';
     let selectedGift = null;
+    
+    // Admin state
+    let adminMode = false;
+    let adminPasswordCache = '';
 
     // DOM Elements
     const giftGrid = document.getElementById('gift-grid');
@@ -116,11 +120,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Display who chose it (if any)
             if (chosenCount > 0) {
-                const namesText = gift.chosenBy.map(escapeHTML).join(' e ');
+                // Formatação dos nomes dos padrinhos com suporte a remoção em modo Admin
+                const namesHtml = gift.chosenBy.map(name => {
+                    if (adminMode) {
+                        return `<span class="guest-name-pill">${escapeHTML(name)} <span class="admin-remove-btn" data-id="${gift.id}" data-name="${escapeHTML(name)}" style="color: var(--accent); cursor: pointer; font-weight: bold; margin-left: 4px; font-size: 1.1rem; display: inline-block; padding: 0 3px;" title="Remover convidado">&times;</span></span>`;
+                    }
+                    return `<span class="guest-name-pill">${escapeHTML(name)}</span>`;
+                }).join(' e ');
+
                 cardContent += `
                     <div class="chosen-by-label">
                         <i class="fa-solid fa-user-check"></i>
-                        <span>Escolhido por <span class="chosen-by-name">${namesText}</span></span>
+                        <span>Escolhido por <span class="chosen-by-name">${namesHtml}</span></span>
                     </div>
                 `;
             }
@@ -143,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             giftGrid.appendChild(card);
         });
 
-        // Attach event listeners
+        // Attach event listeners for Claiming
         const claimBtns = document.querySelectorAll('.claim-btn');
         claimBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -151,6 +162,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 openClaimModal(giftId);
             });
         });
+
+        // Attach event listeners for Admin Removal
+        if (adminMode) {
+            const removeBtns = document.querySelectorAll('.admin-remove-btn');
+            removeBtns.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const giftId = parseInt(e.currentTarget.getAttribute('data-id'));
+                    const guestName = e.currentTarget.getAttribute('data-name');
+                    
+                    if (confirm(`Deseja realmente desmarcar o nome de "${guestName}" deste presente?`)) {
+                        await removeClaim(giftId, guestName);
+                    }
+                });
+            });
+        }
     }
 
     // Helper: Escape HTML
@@ -261,10 +288,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 7. Success dialog close
+    // 7. Request removal from server (Admin Mode)
+    async function removeClaim(giftId, guestName) {
+        try {
+            const response = await fetch(CLAIM_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'release',
+                    id: giftId,
+                    guestName: guestName,
+                    password: adminPasswordCache
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Erro ao remover escolha do presente.');
+            }
+
+            alert('Escolha removida com sucesso!');
+            
+            // Sync lists (either the returned list or trigger a full fetch)
+            if (result.gifts) {
+                gifts = result.gifts;
+                renderGifts();
+            } else {
+                fetchGifts();
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    // 8. Success dialog close
     successCloseBtn.addEventListener('click', () => {
         successOverlay.classList.remove('active');
     });
+
+    // 9. Hidden Admin trigger on title double-click
+    const mainTitle = document.querySelector('.main-title');
+    if (mainTitle) {
+        mainTitle.style.userSelect = 'none';
+        mainTitle.title = "Dê um duplo clique para gerenciar a lista";
+        
+        mainTitle.addEventListener('dblclick', () => {
+            if (adminMode) {
+                adminMode = false;
+                adminPasswordCache = '';
+                alert('Modo Administrador desativado!');
+                renderGifts();
+            } else {
+                const pwd = prompt('Digite a senha de administrador para desmarcar presentes:');
+                if (pwd === '1234') {
+                    adminMode = true;
+                    adminPasswordCache = pwd;
+                    alert('Modo Administrador ATIVADO! Agora você pode clicar no "X" ao lado de qualquer nome para desmarcá-lo.');
+                    renderGifts();
+                } else if (pwd !== null) {
+                    alert('Senha incorreta!');
+                }
+            }
+        });
+    }
 
     // Initialize app
     fetchGifts();
