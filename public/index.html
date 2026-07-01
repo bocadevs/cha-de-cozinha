@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chá de Cozinha - Lista de Presentes</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Site para os convidados do nosso Chá de Cozinha escolherem os presentes de forma simples e organizada, evitando itens repetidos.">
+    <meta property="og:title" content="Chá de Cozinha - Lista de Presentes">
+    <meta property="og:description" content="Ajude-nos a montar nosso novo lar escolhendo um presente da nossa lista.">
+    <meta property="og:type" content="website">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lora:ital,wght@0,400..700;1,400..700&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="decor-top-leaf"></div>
+
+    <div class="container">
+        <!-- Main Invitation Card -->
+        <header class="header-card">
+            <div class="watercolor-banner-wrapper">
+                <img src="assets/kitchen_watercolor.jpg" alt="Aquarela de Chá de Cozinha" class="watercolor-banner">
+            </div>
+            
+            <div class="header-content">
+                <h1 class="main-title">Chá de Cozinha</h1>
+                <div class="divider-heart">
+                    <span class="line"></span>
+                    <i class="fa-solid fa-heart heart-icon"></i>
+                    <span class="line"></span>
+                </div>
+                <p class="intro-text">
+                    Sua presença será o nosso maior presente! Mas, se desejar nos presentear, preparamos uma lista com muito carinho para nos ajudar a montar nosso novo lar.
+                </p>
+            </div>
+        </header>
+
+        <!-- Information / Observation Section -->
+        <section class="observation-card">
+            <div class="obs-title">
+                <i class="fa-solid fa-heart mini-heart"></i>
+                <h2>Observação:</h2>
+                <i class="fa-solid fa-heart mini-heart"></i>
+            </div>
+            <p class="obs-text">Aceitamos presentes nas cores: <strong>preto, cinza ou branco</strong>.</p>
+        </section>
+
+        <!-- Controls (Search and Filters) -->
+        <section class="controls-section">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Buscar presente..." aria-label="Buscar presente">
+            </div>
+            
+            <div class="filters-container">
+                <button class="filter-btn active" id="filter-all" data-filter="all">Todos</button>
+                <button class="filter-btn" id="filter-available" data-filter="available">
+                    <span class="dot green"></span>Disponíveis
+                </button>
+                <button class="filter-btn" id="filter-chosen" data-filter="chosen">
+                    <span class="dot pink"></span>Já Escolhidos
+                </button>
+            </div>
+        </section>
+
+        <!-- Gift Suggestions Title -->
+        <div class="section-badge">
+            <span class="leaf-left">🍃</span>
+            <span class="badge-text">Sugestões de presentes:</span>
+            <span class="leaf-right">🍃</span>
+        </div>
+
+        <!-- Gift Grid -->
+        <main class="gift-grid" id="gift-grid">
+            <!-- Gift items will be injected here via JavaScript -->
+            <div class="loading-state">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Carregando presentes...
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer-section">
+            <p class="footer-blessing">Que Deus abençoe sua generosidade.</p>
+            <p class="footer-handwritten">Estamos ansiosos para celebrar esse momento tão especial com você!</p>
+            <div class="footer-leaves">
+                <span>🍃</span>
+                <i class="fa-solid fa-heart heart-accent"></i>
+                <span>🍃</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Confirm Selection Modal -->
+    <div class="modal-overlay" id="confirm-modal" aria-hidden="true" role="dialog">
+        <div class="modal-card">
+            <button class="modal-close-btn" id="modal-close" aria-label="Fechar modal">&times;</button>
+            <div class="modal-header">
+                <i class="fa-solid fa-gift modal-gift-icon"></i>
+                <h3 class="modal-title">Escolher Presente</h3>
+            </div>
+            <div class="modal-body">
+                <p class="modal-gift-name-label">Você escolheu o presente:</p>
+                <p class="modal-gift-name" id="modal-gift-title">Carregando...</p>
+                
+                <form id="claim-form">
+                    <div class="form-group">
+                        <label for="guest-name">Seu Nome Completo:</label>
+                        <input type="text" id="guest-name" required placeholder="Digite seu nome..." autocomplete="name">
+                        <span class="input-helper">Isso serve para que outros convidados saibam que o item já foi escolhido.</span>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="modal-confirm">Confirmar Presente</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Feedback Overlay -->
+    <div class="success-overlay" id="success-overlay">
+        <div class="success-card">
+            <div class="success-icon-wrapper">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3>Obrigado!</h3>
+            <p id="success-message">Seu presente foi reservado com sucesso.</p>
+            <button class="btn btn-primary" id="success-close-btn">Voltar para a Lista</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

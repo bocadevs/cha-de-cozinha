@@ -1,0 +1,14 @@
+{
+  "name": "cha-de-cozinha",
+  "version": "1.0.0",
+  "description": "Lista de Presentes para Chá de Cozinha",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "@netlify/blobs": "^10.7.9"
+  }
+}
