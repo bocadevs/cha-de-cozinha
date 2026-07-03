@@ -14,16 +14,15 @@ const defaultGifts = [
   { id: 11, name: "Jarra", limit: 2, chosenBy: [] },
   { id: 12, name: "Tábua de corte", limit: 1, chosenBy: [] },
   { id: 13, name: "Escorredor de macarrão", limit: 1, chosenBy: [] },
-  { id: 14, name: "Ralador", limit: 1, chosenBy: [] },
-  { id: 15, name: "Peneiras", limit: 1, chosenBy: [] },
+  // IDs 14 (Ralador) e 15 (Peneiras) removidos
   { id: 16, name: "Espremedor de alho", limit: 1, chosenBy: [] },
   { id: 17, name: "Colher de pau e espátulas", limit: 1, chosenBy: [] },
-  { id: 18, name: "Concha e escumadeira", limit: 1, chosenBy: [] },
+  // ID 18 (Concha e escumadeira) removido
   { id: 19, name: "Fouet (batedor de arame)", limit: 1, chosenBy: [] },
-  { id: 20, name: "Abridor de latas e garrafas", limit: 1, chosenBy: [] },
+  // ID 20 (Abridor de latas e garrafas) removido
   { id: 21, name: "Panos de prato", limit: 1, chosenBy: [] },
   { id: 22, name: "Toalha de mesa", limit: 1, chosenBy: [] },
-  { id: 23, name: "Avental", limit: 1, chosenBy: [] },
+  // ID 23 (Avental) removido
   { id: 24, name: "Lixeira", limit: 1, chosenBy: [] },
   { id: 25, name: "Porta-temperos", limit: 1, chosenBy: [] },
   { id: 26, name: "Liquidificador", limit: 1, chosenBy: [] },
@@ -31,7 +30,14 @@ const defaultGifts = [
   { id: 28, name: "Chaleira elétrica", limit: 1, chosenBy: [] },
   { id: 29, name: "Sanduicheira", limit: 1, chosenBy: [] },
   { id: 30, name: "Mixer", limit: 1, chosenBy: [] },
-  { id: 31, name: "Contribuição via Pix", limit: 2, chosenBy: [] }
+  { id: 31, name: "Contribuição via Pix", limit: 2, chosenBy: [] },
+  // Novos presentes adicionados
+  { id: 32, name: "Toalhas de banho e mesa", limit: 1, chosenBy: [] },
+  { id: 33, name: "Espátulas de silicone", limit: 1, chosenBy: [] },
+  { id: 34, name: "Suporte para braço de sofá", limit: 1, chosenBy: [] },
+  { id: 35, name: "Garrafa térmica", limit: 1, chosenBy: [] },
+  { id: 36, name: "Batedeira", limit: 1, chosenBy: [] },
+  { id: 37, name: "Aspirador de pó", limit: 1, chosenBy: [] }
 ];
 
 // Senha padrão para ações de administração
@@ -57,6 +63,37 @@ export default async (request, context) => {
       if (!gifts) {
         await store.setJSON('gifts_list', defaultGifts);
         gifts = defaultGifts;
+      } else {
+        // --- MIGRAÇÃO AUTOMÁTICA EM PRODUÇÃO ---
+        // Se a lista no banco de dados na nuvem contiver o item Avental (ID 23),
+        // roda a migração para a nova lista sem perder as marcações dos outros presentes.
+        const containsAvental = gifts.some(g => g.id === 23);
+        if (containsAvental) {
+          console.log("Migrando banco de dados em nuvem para a nova lista de presentes...");
+          
+          // 1. Remove os presentes antigos (IDs 14, 15, 18, 20, 23)
+          const idsToRemove = [14, 15, 18, 20, 23];
+          gifts = gifts.filter(g => !idsToRemove.includes(g.id));
+          
+          // 2. Adiciona os presentes novos se não existirem
+          const newItems = [
+            { id: 32, name: "Toalhas de banho e mesa", limit: 1, chosenBy: [] },
+            { id: 33, name: "Espátulas de silicone", limit: 1, chosenBy: [] },
+            { id: 34, name: "Suporte para braço de sofá", limit: 1, chosenBy: [] },
+            { id: 35, name: "Garrafa térmica", limit: 1, chosenBy: [] },
+            { id: 36, name: "Batedeira", limit: 1, chosenBy: [] },
+            { id: 37, name: "Aspirador de pó", limit: 1, chosenBy: [] }
+          ];
+          
+          for (const item of newItems) {
+            if (!gifts.some(g => g.id === item.id)) {
+              gifts.push(item);
+            }
+          }
+          
+          // 3. Grava de volta no Netlify Blobs
+          await store.setJSON('gifts_list', gifts);
+        }
       }
       return new Response(JSON.stringify(gifts), { status: 200, headers });
     }
